@@ -1,0 +1,49 @@
+After installing all the yaml files present in k8-specifications using the command kubectl apply -f . all the necessary pods were created
+After a few seconds all the pods were up & in running state
+kubectl get pods 
+NAME                      READY   STATUS    RESTARTS   AGE
+db-b54cd94f4-mgz7g        1/1     Running   0          34s
+redis-868d64d78-ltn88     1/1     Running   0          33s
+result-5d57b59f4b-mv4qw   1/1     Running   0          33s
+vote-94849dc97-bxctq      1/1     Running   0          33s
+worker-dd46d7584-4w8lw    1/1     Running   0          33s
+
+Voting can be done at http://13.212.46.234:31005/
+Voting result can be seen at http://13.212.46.234:31010/
+
+Initially there are not 0 votes, so the result page shows "No votes added yet"
+
+Observations after deleting pods
+1. After deleting vote pod - kubectl delete po vote-94849dc97-bxctq
+Both front end & unix continued to work
+Reason - Since we had set replicas=1 which means even if a pod is deleted it automatically creates another pod, so both result & voting pages showed no difference or very minute difference, over all behavour of the app remains same, unaltered.
+
+[root@ip-172-31-1-189 k8s-specifications]# kubectl get pods 
+NAME                      READY   STATUS    RESTARTS   AGE
+db-b54cd94f4-mgz7g        1/1     Running   0          11m
+redis-868d64d78-ltn88     1/1     Running   0          11m
+result-5d57b59f4b-mv4qw   1/1     Running   0          11m
+vote-94849dc97-svcm2      1/1     Running   0          7s
+worker-dd46d7584-4w8lw    1/1     Running   0          11m
+
+2. After deleting worker pod - kubectl delete po worker-dd46d7584-4w8lw
+App still works fine, a different worker pod with different id is seen, because of the same reason that replica set in deployment is 1, app behaviour is unaltered.
+NAME                      READY   STATUS    RESTARTS   AGE
+db-b54cd94f4-mgz7g        1/1     Running   0          13m
+redis-868d64d78-ltn88     1/1     Running   0          13m
+result-5d57b59f4b-mv4qw   1/1     Running   0          13m
+vote-94849dc97-svcm2      1/1     Running   0          2m17s
+worker-dd46d7584-72l8w    1/1     Running   0          15s
+
+3. After deleting db pod  - kubectl delete po db-b54cd94f4-mgz7g 
+NAME                      READY   STATUS    RESTARTS   AGE
+db-b54cd94f4-g4vwm        1/1     Running   0          39s
+redis-868d64d78-ltn88     1/1     Running   0          15m
+result-5d57b59f4b-mv4qw   1/1     Running   1          15m
+vote-94849dc97-svcm2      1/1     Running   0          3m29s
+worker-dd46d7584-72l8w    1/1     Running   1          87s
+
+Observation:
+a. After deleting the DB pod db-b54cd94f4-q4dk8, new db pod got added db-b54cd94f4-g4vwm and the RESTARTS value of result and worker pods are changed to 1.
+b. All the previous results are cleared
+c. Scaling was performed to increase the replicas value to 3, so that even if a single pod is deleted it there are 2 pods on stand by & the app is up & running continuously.
